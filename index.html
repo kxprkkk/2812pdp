@@ -1,0 +1,2267 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#070605" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>WYROCZNIA</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@600;700;900&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --obsidian: #070605;
+      --iron-dark: #0f0d0b;
+      --iron-panel: #16120f;
+      --iron-card: #1d1814;
+      --gold-light: #f9e29c;
+      --gold-mid: #c89d54;
+      --gold-dark: #6e5223;
+      --gold-border: #4a3718;
+      --blood-bright: #c91e1e;
+      --blood-mid: #7d1111;
+      --blood-dark: #380606;
+      --bone-text: #e8dec8;
+      --ash-muted: #9c8f7a;
+      --font-display: 'Cinzel Decorative', serif;
+      --font-rpg: 'Cinzel', serif;
+      --font-lore: 'Cormorant Garamond', Georgia, serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      background-color: var(--obsidian);
+      color: var(--bone-text);
+      font-family: var(--font-lore);
+      font-size: 18px;
+      line-height: 1.5;
+      min-height: 100vh;
+      overflow-x: hidden;
+      overscroll-behavior-y: none;
+    }
+
+    /* TŁO Z ŻAREM (CANVAS) + WINIETA */
+    #ember-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      inset: 0;
+      background: 
+        radial-gradient(circle at 50% 15%, rgba(200, 157, 84, 0.07) 0%, transparent 55%),
+        radial-gradient(circle at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.88) 100%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* METALICZNY TEKST RPG */
+    .metallic-text {
+      background: linear-gradient(180deg, #fff5d6 0%, #deb35b 48%, #8f6824 85%, #52390f 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.95));
+    }
+
+    /* ================= EKRAN WEJŚCIOWY (BRAMA WYROCZNI) ================= */
+    #gate-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
+      background: radial-gradient(circle at center, #1b130e 0%, #050403 85%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      transition: opacity 0.8s ease, transform 0.8s ease, visibility 0.8s;
+    }
+
+    #gate-screen.unlocked {
+      opacity: 0;
+      transform: scale(1.06);
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .gate-runes-ring {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 28px 0;
+    }
+
+    .gate-runes-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      animation: rotateSlow 40s linear infinite;
+      opacity: 0.65;
+    }
+
+    @keyframes rotateSlow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .gate-seal-button {
+      position: relative;
+      z-index: 2;
+      width: 144px;
+      height: 144px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #9e1919 0%, #520808 65%, #240303 100%);
+      border: 3px solid var(--gold-mid);
+      box-shadow: 
+        0 0 0 5px #1a120b,
+        0 0 0 7px var(--gold-dark),
+        0 0 45px rgba(201, 30, 30, 0.7),
+        inset 0 0 25px rgba(0, 0, 0, 0.85);
+      color: var(--gold-light);
+      font-family: var(--font-rpg);
+      font-weight: 900;
+      font-size: 0.9rem;
+      letter-spacing: 0.18em;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .gate-seal-button:active, .gate-seal-button:hover {
+      transform: scale(0.95);
+      box-shadow: 
+        0 0 0 5px #1a120b,
+        0 0 0 7px var(--gold-light),
+        0 0 65px rgba(249, 226, 156, 0.75),
+        inset 0 0 20px rgba(0, 0, 0, 0.9);
+    }
+
+    .gate-title {
+      font-family: var(--font-display);
+      font-size: clamp(2.3rem, 8vw, 4.5rem);
+      letter-spacing: 0.22em;
+      padding-left: 0.22em;
+      text-align: center;
+    }
+
+    /* ================= GŁÓWNY UKŁAD RPG HUD ================= */
+    .rpg-app-shell {
+      position: relative;
+      z-index: 5;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 12px 14px 105px; /* miejsce na dolny pasek na telefonie */
+    }
+
+    /* GÓRNY PASEK Z 2 GNIAZDAMI (MUZYKA I ARCHIWUM) */
+    .rpg-top-hud {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(180deg, #1b1511 0%, #0d0a08 100%);
+      border: 2px solid var(--gold-dark);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255, 230, 160, 0.2);
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      position: relative;
+    }
+
+    .rpg-top-hud::before, .rpg-top-hud::after {
+      content: "◆";
+      color: var(--gold-mid);
+      font-size: 10px;
+      position: absolute;
+      bottom: -7px;
+      background: var(--obsidian);
+      padding: 0 4px;
+    }
+    .rpg-top-hud::before { left: 18px; }
+    .rpg-top-hud::after { right: 18px; }
+
+    .hud-socket-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #2b221a, #0e0b09);
+      border: 2px solid var(--gold-dark);
+      box-shadow: inset 0 0 10px #000, 0 2px 6px rgba(0,0,0,0.8);
+      color: var(--gold-mid);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .hud-socket-btn:hover, .hud-socket-btn:active {
+      border-color: var(--gold-light);
+      color: var(--gold-light);
+      transform: scale(0.95);
+    }
+
+    .hud-socket-btn.music-active {
+      border-color: var(--gold-light);
+      box-shadow: 0 0 15px rgba(200, 157, 84, 0.65), inset 0 0 10px rgba(200, 157, 84, 0.3);
+      color: var(--gold-light);
+    }
+
+    .hud-socket-btn svg {
+      width: 22px;
+      height: 22px;
+      fill: currentColor;
+    }
+
+    .hud-main-brand {
+      font-family: var(--font-display);
+      font-size: clamp(1.45rem, 5.2vw, 2.5rem);
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      padding-left: 0.2em;
+      text-align: center;
+    }
+
+    /* ================= AKTYWNY BANER KOCKODONOV (OBLĘŻENIE CZASOWE) ================= */
+    #kocko-active-hud {
+      display: none;
+      background: linear-gradient(135deg, #290808 0%, #120404 55%, #240707 100%);
+      border: 2px solid var(--blood-bright);
+      box-shadow: 0 0 25px rgba(201, 30, 30, 0.4), inset 0 0 25px #000;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    #kocko-active-hud.active {
+      display: block;
+      animation: siegePulse 2.5s infinite;
+    }
+
+    @keyframes siegePulse {
+      0%, 100% { border-color: var(--blood-bright); }
+      50% { border-color: var(--gold-mid); }
+    }
+
+    .siege-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      border-bottom: 1px solid rgba(200, 157, 84, 0.3);
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+
+    .siege-timer {
+      font-family: var(--font-rpg);
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #ff5252;
+      letter-spacing: 0.1em;
+      text-shadow: 0 0 10px rgba(255, 82, 82, 0.6);
+    }
+
+    .siege-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      font-size: 0.95rem;
+    }
+
+    /* ================= PRZEŁĄCZNIK MOBILNY: WYKUJ AKT vs KSIĘGA AKT ================= */
+    .mobile-mode-switcher {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: #0d0b09;
+      padding: 6px;
+      border: 1px solid var(--gold-border);
+      margin-bottom: 14px;
+    }
+
+    .mode-pill {
+      background: linear-gradient(180deg, #1b1612 0%, #110d0b 100%);
+      border: 1px solid #2e2318;
+      color: var(--ash-muted);
+      font-family: var(--font-rpg);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 10px 8px;
+      text-align: center;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+
+    .mode-pill.active {
+      background: linear-gradient(180deg, #3b2814 0%, #1f140a 100%);
+      border-color: var(--gold-mid);
+      color: var(--gold-light);
+      box-shadow: inset 0 0 12px rgba(200, 157, 84, 0.25);
+    }
+
+    /* ================= KARTY I PANELE GRIMOIRE ================= */
+    .module-view {
+      display: none;
+    }
+    .module-view.active {
+      display: block;
+      animation: fadeUp 0.28s ease-out;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .grimoire-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .rpg-panel {
+      background: 
+        radial-gradient(circle at 50% 0%, rgba(200, 157, 84, 0.05) 0%, transparent 70%),
+        var(--iron-panel);
+      border: 2px solid var(--gold-border);
+      box-shadow: 0 12px 35px rgba(0,0,0,0.9), inset 0 0 40px rgba(0,0,0,0.85);
+      padding: 20px 16px;
+      position: relative;
+    }
+
+    /* Narożne nity RPG */
+    .rpg-panel::before, .rpg-panel::after {
+      content: "";
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-color: var(--gold-mid);
+      border-style: solid;
+      pointer-events: none;
+    }
+    .rpg-panel::before {
+      top: 5px; left: 5px;
+      border-width: 2px 0 0 2px;
+    }
+    .rpg-panel::after {
+      bottom: 5px; right: 5px;
+      border-width: 0 2px 2px 0;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--gold-dark);
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+      gap: 10px;
+    }
+
+    .panel-title {
+      font-family: var(--font-rpg);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--gold-light);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .panel-badge {
+      font-family: var(--font-rpg);
+      font-size: 0.7rem;
+      color: var(--gold-mid);
+      border: 1px solid var(--gold-dark);
+      padding: 3px 8px;
+      background: #0c0a08;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+
+    .lore-quote {
+      font-style: italic;
+      color: var(--ash-muted);
+      font-size: 0.98rem;
+      background: rgba(0, 0, 0, 0.35);
+      border-left: 3px solid var(--blood-mid);
+      padding: 8px 12px;
+      margin-bottom: 18px;
+    }
+
+    /* ================= FORMULARZE RPG ================= */
+    .field-block {
+      margin-bottom: 15px;
+    }
+
+    .field-label {
+      display: block;
+      font-family: var(--font-rpg);
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--gold-mid);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .rpg-input, .rpg-textarea, .rpg-select {
+      width: 100%;
+      background: #0b0907;
+      border: 1px solid var(--gold-dark);
+      box-shadow: inset 0 3px 8px rgba(0,0,0,0.9);
+      color: var(--bone-text);
+      font-family: var(--font-lore);
+      font-size: 1.08rem;
+      padding: 11px 13px;
+      border-radius: 2px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .rpg-input:focus, .rpg-textarea:focus, .rpg-select:focus {
+      outline: none;
+      border-color: var(--gold-light);
+      box-shadow: inset 0 3px 8px rgba(0,0,0,0.9), 0 0 12px rgba(200, 157, 84, 0.3);
+    }
+
+    .rpg-textarea {
+      min-height: 92px;
+      resize: vertical;
+    }
+
+    .row-2-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* KUTY PRZYCISK AKTYWACJI (STYL DIABLO / RPG) */
+    .btn-forged-crimson {
+      width: 100%;
+      background: linear-gradient(180deg, #8f1616 0%, #520909 55%, #300404 100%);
+      border: 2px solid var(--gold-mid);
+      box-shadow: 
+        0 6px 18px rgba(0,0,0,0.85),
+        inset 0 1px 1px rgba(255, 180, 180, 0.35),
+        inset 0 0 15px rgba(0,0,0,0.6);
+      color: var(--gold-light);
+      font-family: var(--font-rpg);
+      font-size: 0.96rem;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 15px 16px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+      margin-top: 6px;
+    }
+
+    .btn-forged-crimson:hover, .btn-forged-crimson:active {
+      background: linear-gradient(180deg, #b01c1c 0%, #690c0c 55%, #3d0505 100%);
+      border-color: var(--gold-light);
+      box-shadow: 0 0 22px rgba(201, 30, 30, 0.7), inset 0 0 10px rgba(249, 226, 156, 0.3);
+      transform: translateY(-1px);
+    }
+
+    /* ================= KARTY ZAPISANYCH AKT ================= */
+    .scrolls-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .scroll-card {
+      background: linear-gradient(180deg, #211b16 0%, #15110e 100%);
+      border: 1px solid var(--gold-dark);
+      border-left: 4px solid var(--gold-mid);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.75);
+      padding: 15px;
+      position: relative;
+    }
+
+    .scroll-card.blood-seal {
+      border-left-color: var(--blood-bright);
+    }
+
+    .scroll-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-rpg);
+      font-size: 0.7rem;
+      color: var(--gold-mid);
+      letter-spacing: 0.08em;
+      border-bottom: 1px dashed rgba(200, 157, 84, 0.22);
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .scroll-card-title {
+      font-family: var(--font-rpg);
+      font-size: 1.12rem;
+      color: var(--gold-light);
+      margin-bottom: 8px;
+    }
+
+    .scroll-detail {
+      font-size: 0.98rem;
+      margin-bottom: 8px;
+      color: var(--bone-text);
+    }
+
+    .scroll-detail strong {
+      font-family: var(--font-rpg);
+      font-size: 0.74rem;
+      color: var(--gold-mid);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .scroll-card-footer {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .btn-rpg-gold {
+      flex: 1;
+      background: linear-gradient(180deg, #382916 0%, #1c140a 100%);
+      border: 1px solid var(--gold-mid);
+      color: var(--gold-light);
+      font-family: var(--font-rpg);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 9px 12px;
+      cursor: pointer;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .btn-rpg-gold:active, .btn-rpg-gold:hover {
+      background: var(--gold-mid);
+      color: #090706;
+    }
+
+    .btn-rpg-ash {
+      background: #140f0d;
+      border: 1px solid #4a2020;
+      color: #b86c6c;
+      font-family: var(--font-rpg);
+      font-size: 0.7rem;
+      padding: 9px 12px;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .empty-sanctum {
+      text-align: center;
+      padding: 36px 16px;
+      color: var(--ash-muted);
+      font-style: italic;
+      border: 1px dashed var(--gold-border);
+      background: rgba(0,0,0,0.3);
+    }
+
+    /* Pasek postępu dni w Postanowieniach */
+    .xp-bar-frame {
+      height: 8px;
+      background: #090706;
+      border: 1px solid var(--gold-dark);
+      margin: 8px 0 12px;
+      overflow: hidden;
+    }
+    .xp-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--blood-bright), var(--gold-mid));
+    }
+
+    /* ================= DOLNY PASEK NAWIGACJI RPG (SKILL BAR) ================= */
+    .rpg-bottom-dock {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: linear-gradient(180deg, #1b1510 0%, #090705 100%);
+      border-top: 2px solid var(--gold-mid);
+      box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.95);
+      padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    }
+
+    .dock-slots {
+      max-width: 760px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .dock-slot {
+      background: linear-gradient(180deg, #17120e 0%, #0d0a08 100%);
+      border: 1px solid var(--gold-border);
+      padding: 8px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--ash-muted);
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .dock-slot svg {
+      width: 22px;
+      height: 22px;
+      fill: currentColor;
+      margin-bottom: 4px;
+      transition: transform 0.2s;
+    }
+
+    .dock-slot-label {
+      font-family: var(--font-rpg);
+      font-size: 0.64rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 1.1;
+    }
+
+    .dock-slot.active {
+      background: linear-gradient(180deg, #382412 0%, #170e07 100%);
+      border-color: var(--gold-light);
+      color: var(--gold-light);
+      box-shadow: inset 0 0 14px rgba(200, 157, 84, 0.35), 0 0 12px rgba(200, 157, 84, 0.25);
+    }
+
+    .dock-slot.active svg {
+      transform: scale(1.12);
+      filter: drop-shadow(0 0 6px rgba(249, 226, 156, 0.6));
+    }
+
+    /* ================= UKRYTE MODALE (MUZYKA ORAZ ARCHIWUM) ================= */
+    .rpg-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 3, 2, 0.88);
+      backdrop-filter: blur(4px);
+      z-index: 8000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+    }
+
+    .rpg-modal-backdrop.open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .rpg-modal-box {
+      width: 100%;
+      max-width: 480px;
+      background: linear-gradient(180deg, #1f1914 0%, #110d0a 100%);
+      border: 2px solid var(--gold-mid);
+      box-shadow: 0 0 50px rgba(0,0,0,0.95), inset 0 0 30px rgba(0,0,0,0.8);
+      padding: 22px 18px;
+      position: relative;
+    }
+
+    .modal-close-btn {
+      background: none;
+      border: 1px solid var(--gold-dark);
+      color: var(--gold-mid);
+      font-family: var(--font-rpg);
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      cursor: pointer;
+    }
+
+    /* Ukryty odtwarzacz YT */
+    #yt-Apply-hidden {
+      position: fixed;
+      left: -9999px;
+      bottom: -9999px;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* ================= EPICKI EKRAN PO AKTYWACJI AKTU ================= */
+    #ritual-climax-screen {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(65, 8, 8, 0.94) 0%, rgba(5, 4, 3, 0.98) 75%);
+      z-index: 9500;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.35s ease, visibility 0.35s ease;
+    }
+
+    #ritual-climax-screen.active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .climax-emblem {
+      width: 148px;
+      height: 148px;
+      border-radius: 50%;
+      border: 3px double var(--gold-light);
+      background: radial-gradient(circle, #7a1111 0%, #1c0404 75%);
+      box-shadow: 0 0 60px rgba(201, 30, 30, 0.9), 0 0 100px rgba(249, 226, 156, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      color: var(--gold-light);
+      letter-spacing: 0.14em;
+      margin-bottom: 24px;
+      animation: slamSeal 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes slamSeal {
+      0% { transform: scale(2.6); opacity: 0; }
+      70% { transform: scale(0.9); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .climax-heading {
+      font-family: var(--font-display);
+      font-size: clamp(1.55rem, 6vw, 3rem);
+      letter-spacing: 0.14em;
+      margin-bottom: 12px;
+      max-width: 820px;
+    }
+
+    .climax-desc {
+      font-style: italic;
+      color: var(--bone-text);
+      font-size: 1.2rem;
+      max-width: 560px;
+      margin-bottom: 28px;
+    }
+
+    .climax-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      max-width: 340px;
+    }
+
+    /* ================= WIDOK DESKTOPOWY (SZEROKA KSIĘGA >= 960px) ================= */
+    @media (min-width: 960px) {
+      .rpg-app-shell {
+        padding: 24px 28px 110px;
+      }
+      .mobile-mode-switcher {
+        display: none; /* Na komputerze oba panele są widoczne jednocześnie */
+      }
+      .grimoire-grid {
+        grid-template-columns: 5fr 6fr;
+        gap: 28px;
+        align-items: start;
+      }
+      .rpg-panel.mobile-hidden {
+        display: block !important;
+      }
+      .rpg-panel {
+        padding: 26px 28px;
+      }
+      .dock-slot {
+        flex-direction: row;
+        gap: 10px;
+        padding: 12px 16px;
+      }
+      .dock-slot svg {
+        margin-bottom: 0;
+      }
+      .dock-slot-label {
+        font-size: 0.8rem;
+      }
+    }
+
+    @media (max-width: 959px) {
+      .rpg-panel.mobile-hidden {
+        display: none !important;
+      }
+      .siege-columns {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ================= PRADAWNY DRUK (CZYSTA BIEL A4 DO PDF) ================= */
+    #print-area {
+      display: none;
+    }
+
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 14mm;
+      }
+
+      html, body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-family: 'Cormorant Garamond', Georgia, serif !important;
+        font-size: 12pt !important;
+      }
+
+      #ember-canvas,
+      .vignette-overlay,
+      #gate-screen,
+      .rpg-app-shell,
+      .rpg-bottom-dock,
+      .rpg-modal-backdrop,
+      #ritual-climax-screen,
+      #yt-Apply-hidden {
+        display: none !important;
+      }
+
+      #print-area {
+        display: block !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        width: 100% !important;
+      }
+
+      .print-page-frame {
+        border: 3px double #000000;
+        padding: 12mm 14mm;
+        min-height: 258mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background: #ffffff !important;
+      }
+
+      .print-head {
+        text-align: center;
+        border-bottom: 2px solid #000000;
+        padding-bottom: 5mm;
+        margin-bottom: 6mm;
+      }
+
+      .print-main-logo {
+        font-family: 'Cinzel Decorative', 'Cinzel', serif;
+        font-size: 28pt;
+        font-weight: 900;
+        letter-spacing: 0.25em;
+        color: #000000;
+      }
+
+      .print-sub-type {
+        font-family: 'Cinzel', serif;
+        font-size: 12pt;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        margin-top: 2mm;
+        text-transform: uppercase;
+      }
+
+      .print-meta-row {
+        display: flex;
+        justify-content: space-between;
+        font-family: 'Cinzel', serif;
+        font-size: 9pt;
+        border-bottom: 1px solid #000000;
+        padding-bottom: 2.5mm;
+        margin-bottom: 6mm;
+      }
+
+      .print-sec-heading {
+        font-family: 'Cinzel', serif;
+        font-size: 10.5pt;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin: 5mm 0 2mm;
+        border-bottom: 1px solid #000;
+        padding-bottom: 1mm;
+      }
+
+      .print-box {
+        border: 1px solid #000000;
+        padding: 4mm;
+        margin-bottom: 4mm;
+        font-size: 12pt;
+        background: #ffffff !important;
+      }
+
+      .print-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 4mm;
+        font-size: 10pt;
+      }
+
+      .print-table th, .print-table td {
+        border: 1px solid #000000;
+        padding: 2.5mm;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .print-table th {
+        font-family: 'Cinzel', serif;
+        font-size: 9pt;
+        text-transform: uppercase;
+      }
+
+      .print-foot {
+        margin-top: 10mm;
+        padding-top: 6mm;
+        border-top: 2px solid #000000;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+
+      .print-stamp-circle {
+        width: 34mm;
+        height: 34mm;
+        border: 3px double #000000;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-family: 'Cinzel', serif;
+        font-weight: 700;
+        font-size: 8pt;
+        letter-spacing: 0.08em;
+      }
+
+      .print-sign-area {
+        width: 75mm;
+        text-align: center;
+      }
+
+      .print-sign-line {
+        border-bottom: 1px dotted #000000;
+        height: 16mm;
+        margin-bottom: 2mm;
+      }
+
+      .print-sign-caption {
+        font-family: 'Cinzel', serif;
+        font-size: 8.5pt;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TŁO CZĄSTECZKOWE (POPIÓŁ I ŻAR) -->
+  <canvas id="ember-canvas"></canvas>
+  <div class="vignette-overlay"></div>
+
+  <!-- UKRYTY ODTWARZACZ YOUTUBE -->
+  <div id="yt-Apply-hidden">
+    <div id="yt-player"></div>
+  </div>
+
+  <!-- ==================== BRAMA WEJŚCIOWA ==================== -->
+  <div id="gate-screen">
+    <h1 class="gate-title metallic-text">WYROCZNIA</h1>
+    <div class="gate-runes-ring">
+      <svg class="gate-runes-svg" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="92" fill="none" stroke="#6e5223" stroke-width="1.5" stroke-dasharray="6 4"/>
+        <circle cx="100" cy="100" r="82" fill="none" stroke="#c89d54" stroke-width="1"/>
+        <polygon points="100,12 122,78 188,78 134,118 154,184 100,144 46,184 66,118 12,78 78,78" fill="none" stroke="#6e5223" stroke-width="0.8"/>
+      </svg>
+      <button class="gate-seal-button" id="unlock-gate-btn">
+        <svg width="38" height="38" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2L15 8L21 9L16.5 14L18 20L12 17L6 20L7.5 14L3 9L9 8L12 2Z"/>
+        </svg>
+        <span>WEJDŹ</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== EPICKI EKRAN AKTYWACJI AKTU ==================== -->
+  <div id="ritual-climax-screen">
+    <div class="climax-emblem" id="climax-seal-code">PDP ART</div>
+    <h2 class="climax-heading metallic-text" id="climax-title">AKTYWOWANO PODPIS ARTYSTY</h2>
+    <p class="climax-desc" id="climax-desc">Słowo stało się prawem.</p>
+    <div class="climax-actions">
+      <button class="btn-forged-crimson" id="climax-print-btn">🖨️ Wydrukuj Pradawny Druk (PDF)</button>
+      <button class="btn-rpg-gold" onclick="closeClimaxScreen()">Powróć do Wyroczni</button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 1: UKRYTE SANKTUARIUM DŹWIĘKU (MUZYKA) ==================== -->
+  <div class="rpg-modal-backdrop" id="music-modal">
+    <div class="rpg-modal-box">
+      <div class="panel-header">
+        <span class="panel-title">Chór i Dźwięki Świątyni</span>
+        <button class="modal-close-btn" onclick="toggleModal('music-modal', false)">Zamknij ✕</button>
+      </div>
+
+      <div class="field-block">
+        <label class="field-label">Status Muzyki w Tle (YouTube)</label>
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+          <button class="btn-rpg-gold" onclick="toggleYouTubePlayback()" id="yt-play-btn">▶ Odtwórz / Pauza</button>
+        </div>
+        <label class="field-label">Link do Chóru / Ambientu YouTube</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="yt-url-field" class="rpg-input" value="https://www.youtube.com/watch?v=6QdLsPBa30o" />
+          <button class="btn-rpg-gold" style="flex:0 0 auto;" onclick="changeYouTubeTrack()">Załaduj</button>
+        </div>
+      </div>
+
+      <div class="field-block">
+        <label class="field-label">Głośność Muzyki YouTube</label>
+        <input type="range" min="0" max="100" value="70" style="width:100%; accent-color:var(--gold-mid);" oninput="setYouTubeVol(this.value)" />
+      </div>
+
+      <div class="field-block" style="border-top:1px solid var(--gold-border); padding-top:14px;">
+        <label class="field-label">Syntezator Świątynny (Działa Offline)</label>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-rpg-gold" id="drone-btn" onclick="toggleTempleDrone()">Mistyczny Dron 432 Hz: WYŁ</button>
+          <button class="btn-rpg-gold" style="flex:0 0 auto;" onclick="playRitualGong('PDP')">Uderz w Gong</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: UKRYTE ARCHIWUM AKT ==================== -->
+  <div class="rpg-modal-backdrop" id="archive-modal">
+    <div class="rpg-modal-box">
+      <div class="panel-header">
+        <span class="panel-title">Skarbiec i Kopie Akt</span>
+        <button class="modal-close-btn" onclick="toggleModal('archive-modal', false)">Zamknij ✕</button>
+      </div>
+      <p class="lore-quote">
+        Wszystkie dekrety są pieczętowane w pamięci Twojego urządzenia. Możesz w każdej chwili poprosić Wyrocznię o wydanie pełnego zwoju zapasowego.
+      </p>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <button class="btn-forged-crimson" onclick="exportOracleScroll()">
+          📜 Poproś Wyrocznię o kopię akt
+        </button>
+        <button class="btn-rpg-gold" style="padding:13px;" onclick="document.getElementById('import-scroll-file').click()">
+          🕯️ Przekaż Wyroczni zwój z aktami (Wczytaj)
+        </button>
+        <input type="file" id="import-scroll-file" accept=".json" style="display:none" onchange="importOracleScroll(event)" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== GŁÓWNA POWŁOKA WYROCZNI ==================== -->
+  <div class="rpg-app-shell">
+
+    <!-- GÓRNY PASEK: LEWY SLOT (MUZYKA) | WYROCZNIA | PRAWY SLOT (ARCHIWUM) -->
+    <header class="rpg-top-hud">
+      <button class="hud-socket-btn" id="music-socket-btn" onclick="toggleModal('music-modal', true)" title="Dźwięki Świątyni">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+        </svg>
+      </button>
+
+      <h1 class="hud-main-brand metallic-text">WYROCZNIA</h1>
+
+      <button class="hud-socket-btn" onclick="toggleModal('archive-modal', true)" title="Kopia Akt Wyroczni">
+        <svg viewBox="0 0 24 24">
+          <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- AKTYWNY BANER KOCKODONOV (GDY BLOK TRWA) -->
+    <section id="kocko-active-hud">
+      <div class="siege-top">
+        <div>
+          <div style="font-family:var(--font-rpg); color:var(--gold-light); font-size:0.95rem; letter-spacing:0.08em;" id="hud-kocko-name">BLOK KOCKODONOV</div>
+          <div style="font-size:0.85rem; color:var(--ash-muted);" id="hud-kocko-hours">18:00 – 19:00</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="siege-timer" id="hud-kocko-timer">00:00:00</span>
+          <button class="modal-close-btn" onclick="stopActiveKockodonov()">Zdejmij</button>
+        </div>
+      </div>
+      <div class="siege-columns">
+        <div>
+          <strong style="color:#ff6b6b; font-family:var(--font-rpg); font-size:0.75rem;">ZAKAZY:</strong>
+          <div id="hud-kocko-bans"></div>
+        </div>
+        <div>
+          <strong style="color:var(--gold-light); font-family:var(--font-rpg); font-size:0.75rem;">WYJĄTKI:</strong>
+          <div id="hud-kocko-exc"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRZEŁĄCZNIK TRYBU NA TELEFONIE (FORMULARZ vs KSIĘGA AKT) -->
+    <div class="mobile-mode-switcher">
+      <div class="mode-pill active" id="pill-forge" onclick="setMobilePane('forge')">✒️ Wykuj Nowy Akt</div>
+      <div class="mode-pill" id="pill-tome" onclick="setMobilePane('tome')">📖 Księga Akt (<span id="mobile-records-counter">0</span>)</div>
+    </div>
+
+    <!-- ==================== 1. PODPIS ARTYSTY (PDP ART) ==================== -->
+    <main id="mod-pdp" class="module-view active">
+      <div class="grimoire-grid">
+        <div class="rpg-panel pane-forge">
+          <div class="panel-header">
+            <span class="panel-title">Podpis Artysty</span>
+            <span class="panel-badge">PDP ART</span>
+          </div>
+          <p class="lore-quote">
+            Akt najwyższej rangi. Złożenie Podpisu Artysty wymusza przyjęcie wyznaczonej postawy pod groźbą surowych konsekwencji.
+          </p>
+          <form onsubmit="submitPdpArt(event)">
+            <div class="field-block">
+              <label class="field-label">Nazwa Czynności / Postawy</label>
+              <input type="text" id="pdp-title" class="rpg-input" required placeholder="np. Żelazny Reżim Treningowy" />
+            </div>
+            <div class="field-block">
+              <label class="field-label">Przyjmowana Postawa (Przysięga)</label>
+              <textarea id="pdp-stance" class="rpg-textarea" required placeholder="Przyjmuję teraz postawę..."></textarea>
+            </div>
+            <div class="field-block">
+              <label class="field-label">Konsekwencje Złamania Podpisu Artysty</label>
+              <textarea id="pdp-conseq" class="rpg-textarea" required placeholder="W razie złamania Podpisu Artysty ponoszę..."></textarea>
+            </div>
+            <button type="submit" class="btn-forged-crimson">🔥 Aktywuj Podpis Artysty</button>
+          </form>
+        </div>
+
+        <div class="rpg-panel pane-tome mobile-hidden">
+          <div class="panel-header">
+            <span class="panel-title">Złożone Podpisy Artysty</span>
+            <span class="panel-badge" id="badge-count-pdp">0 AKT</span>
+          </div>
+          <div id="list-pdp" class="scrolls-list"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ==================== 2. AKTA NATURY 2000 ==================== -->
+    <main id="mod-natura" class="module-view">
+      <div class="grimoire-grid">
+        <div class="rpg-panel pane-forge">
+          <div class="panel-header">
+            <span class="panel-title">Wpis do Akt Natury 2000</span>
+            <span class="panel-badge">REZERWAT</span>
+          </div>
+          <p class="lore-quote">
+            Osoby wymagające „specjalnej troski". Zamiast próbować je zmienić, uznajemy je za chroniony relikt przyrody i wyłącznie obserwujemy.
+          </p>
+          <form onsubmit="submitNatura(event)">
+            <div class="field-block">
+              <label class="field-label">Nazwa / Kryptonim Obiektu</label>
+              <input type="text" id="nat-name" class="rpg-input" required placeholder="Imię, ksywka lub inicjały..." />
+            </div>
+            <div class="row-2-cols">
+              <div class="field-block">
+                <label class="field-label">Siedlisko</label>
+                <input type="text" id="nat-habitat" class="rpg-input" required placeholder="np. Praca, Ulica..." />
+              </div>
+              <div class="field-block">
+                <label class="field-label">Klasa Reliktu</label>
+                <select id="nat-class" class="rpg-select">
+                  <option value="Relikt Ścisłej Ochrony">Relikt Ścisłej Ochrony</option>
+                  <option value="Pomnik Osobliwości">Pomnik Osobliwości</option>
+                  <option value="Endemit Niereformowalny">Endemit Niereformowalny</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-block">
+              <label class="field-label">Opis Anomalii (Powód Wpisu)</label>
+              <textarea id="nat-reason" class="rpg-textarea" required placeholder="Opisz zachowanie kwalifikujące do Sektora Natura 2000..."></textarea>
+            </div>
+            <div class="field-block">
+              <label class="field-label">Dyrektywa Ochronna</label>
+              <input type="text" id="nat-dir" class="rpg-input" value="Całkowity zakaz ingerencji w jestestwo obiektu. Wyłącznie bierna obserwacja." required />
+            </div>
+            <button type="submit" class="btn-forged-crimson">🦌 Wpisz do Akt Natury 2000</button>
+          </form>
+        </div>
+
+        <div class="rpg-panel pane-tome mobile-hidden">
+          <div class="panel-header">
+            <span class="panel-title">Sektor Natura 2000</span>
+            <button class="btn-rpg-gold" style="flex:0 0 auto; padding:6px 10px;" onclick="printFullNaturaSector()">🖨️ Drukuj Cały Sektor</button>
+          </div>
+          <div id="list-natura" class="scrolls-list"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ==================== 3. BLOK KOCKODONOV ==================== -->
+    <main id="mod-kockodonov" class="module-view">
+      <div class="grimoire-grid">
+        <div class="rpg-panel pane-forge">
+          <div class="panel-header">
+            <span class="panel-title">Blok Kockodonov</span>
+            <span class="panel-badge">REŻIM CZASU</span>
+          </div>
+          <p class="lore-quote">
+            Bezwzględna blokada czasowa. W wyznaczonych godzinach obowiązuje szereg zakazów oraz ściśle określone wyjątki od reguły.
+          </p>
+          <form onsubmit="submitKockodonov(event)">
+            <div class="field-block">
+              <label class="field-label">Zadanie / Cel Focusu</label>
+              <input type="text" id="kocko-title" class="rpg-input" required placeholder="np. Głęboka praca / Sesja bez rozpraszaczy" />
+            </div>
+            <div class="row-2-cols">
+              <div class="field-block">
+                <label class="field-label">Od Godziny</label>
+                <input type="time" id="kocko-start" class="rpg-input" value="18:00" required />
+              </div>
+              <div class="field-block">
+                <label class="field-label">Do Godziny</label>
+                <input type="time" id="kocko-end" class="rpg-input" value="19:00" required />
+              </div>
+            </div>
+            <div class="field-block">
+              <label class="field-label">Szereg Zakazów w Czasie Bloku</label>
+              <textarea id="kocko-bans" class="rpg-textarea" required placeholder="- Zakaz dotykania telefonu&#10;- Zakaz social mediów&#10;- Zakaz przerywania sesji"></textarea>
+            </div>
+            <div class="field-block">
+              <label class="field-label">Wyjątki od Reguł</label>
+              <textarea id="kocko-exc" class="rpg-textarea" placeholder="- Woda / kawa&#10;- Alarmowy kontakt"></textarea>
+            </div>
+            <button type="submit" class="btn-forged-crimson">⏳ Aktywuj Blok Kockodonov</button>
+          </form>
+        </div>
+
+        <div class="rpg-panel pane-tome mobile-hidden">
+          <div class="panel-header">
+            <span class="panel-title">Zapisane Bloki Kockodonov</span>
+            <span class="panel-badge" id="badge-count-kocko">0 BLOKÓW</span>
+          </div>
+          <div id="list-kockodonov" class="scrolls-list"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ==================== 4. POSTANOWIENIA ==================== -->
+    <main id="mod-postanowienia" class="module-view">
+      <div class="grimoire-grid">
+        <div class="rpg-panel pane-forge">
+          <div class="panel-header">
+            <span class="panel-title">Postanowienia Odrębne</span>
+            <span class="panel-badge">DEKRET</span>
+          </div>
+          <p class="lore-quote">
+            Akta odrębne od Podpisu Artysty. Wprowadzają w życie szereg postanowień obowiązujących od wyznaczonego dnia do dnia końcowego.
+          </p>
+          <form onsubmit="submitPostanowienie(event)">
+            <div class="field-block">
+              <label class="field-label">Tytuł Aktu Postanowień</label>
+              <input type="text" id="post-title" class="rpg-input" required placeholder="np. Dekret Trzeźwości Umysłu" />
+            </div>
+            <div class="row-2-cols">
+              <div class="field-block">
+                <label class="field-label">Od Dnia</label>
+                <input type="date" id="post-start" class="rpg-input" required />
+              </div>
+              <div class="field-block">
+                <label class="field-label">Do Dnia</label>
+                <input type="date" id="post-end" class="rpg-input" required />
+              </div>
+            </div>
+            <div class="field-block">
+              <label class="field-label">Szereg Postanowień (Klauzule)</label>
+              <textarea id="post-clauses" class="rpg-textarea" required placeholder="1. Pierwsze postanowienie...&#10;2. Drugie postanowienie..."></textarea>
+            </div>
+            <div class="field-block">
+              <label class="field-label">Uwagi Wykonawcze</label>
+              <input type="text" id="post-notes" class="rpg-input" placeholder="np. Codzienny rachunek sumienia o 22:00" />
+            </div>
+            <button type="submit" class="btn-forged-crimson">📜 Wprowadź Postanowienia w Życie</button>
+          </form>
+        </div>
+
+        <div class="rpg-panel pane-tome mobile-hidden">
+          <div class="panel-header">
+            <span class="panel-title">Akta Postanowień</span>
+            <span class="panel-badge" id="badge-count-post">0 AKT</span>
+          </div>
+          <div id="list-postanowienia" class="scrolls-list"></div>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- ==================== DOLNY PASEK SKILL BAR (4 MODUŁY) ==================== -->
+  <nav class="rpg-bottom-dock">
+    <div class="dock-slots">
+      <div class="dock-slot active" onclick="selectModule('pdp', this)">
+        <svg viewBox="0 0 24 24"><path d="M12 2L15 8L21 9L16.5 14L18 20L12 17L6 20L7.5 14L3 9L9 8L12 2Z"/></svg>
+        <span class="dock-slot-label">Podpis Artysty</span>
+      </div>
+      <div class="dock-slot" onclick="selectModule('natura', this)">
+        <svg viewBox="0 0 24 24"><path d="M12 3C7 3 3 7 3 12s4 9 9 9 9-4 9-9-4-9-9-9zm0 16c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7zm1-11h-2v4H7v2h4v4h2v-4h4v-2h-4V8z"/></svg>
+        <span class="dock-slot-label">Natura 2000</span>
+      </div>
+      <div class="dock-slot" onclick="selectModule('kockodonov', this)">
+        <svg viewBox="0 0 24 24"><path d="M6 2v6h.01L6 8.01 10 12l-4 4 .01.01H6V22h12v-5.99h-.01L18 16l-4-4 4-3.99-.01-.01H18V2H6zm10 14.5V20H8v-3.5l4-4 4 4zm-4-5l-4-4V4h8v3.5l-4 4z"/></svg>
+        <span class="dock-slot-label">Kockodonov</span>
+      </div>
+      <div class="dock-slot" onclick="selectModule('postanowienia', this)">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+        <span class="dock-slot-label">Postanowienia</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ARKUSZ PRADAWNEGO DRUKU (CZYSTA BIEL A4) -->
+  <div id="print-area"></div>
+
+  <script>
+    /********************************************************************
+     * 1. SYSTEM CZĄSTECZEK (POPIÓŁ I ŻAR W TLE DARK FANTASY)
+     ********************************************************************/
+    const canvas = document.getElementById('ember-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    for (let i = 0; i < 42; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 2.2 + 0.6,
+        vy: -(Math.random() * 0.45 + 0.15),
+        vx: (Math.random() - 0.5) * 0.3,
+        alpha: Math.random() * 0.65 + 0.15,
+        gold: Math.random() > 0.4
+      });
+    }
+
+    function animateEmbers() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const p of particles) {
+        p.y += p.vy;
+        p.x += p.vx;
+        if (p.y < -10) {
+          p.y = canvas.height + 10;
+          p.x = Math.random() * canvas.width;
+        }
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = p.gold 
+          ? `rgba(218, 165, 65, ${p.alpha})` 
+          : `rgba(195, 45, 25, ${p.alpha})`;
+        ctx.fill();
+      }
+      requestAnimationFrame(animateEmbers);
+    }
+    animateEmbers();
+
+    /********************************************************************
+     * 2. BAZA DANYCH LOCALSTORAGE
+     ********************************************************************/
+    const DB_KEY = 'WYROCZNIA_SANCTUM_DATA_V1';
+    let currentModule = 'pdp';
+    let currentMobilePane = 'forge';
+
+    let db = {
+      pdpArt: [],
+      natura2000: [],
+      kockodonov: [],
+      postanowienia: [],
+      activeKockodonovId: null
+    };
+
+    function loadDb() {
+      try {
+        const raw = localStorage.getItem(DB_KEY);
+        if (raw) db = { ...db, ...JSON.parse(raw) };
+      } catch (e) {}
+    }
+
+    function saveDb() {
+      localStorage.setItem(DB_KEY, JSON.stringify(db));
+      renderAllScrolls();
+      updateMobileCounter();
+    }
+
+    /********************************************************************
+     * 3. DŹWIĘKI RPG: YOUTUBE API + GONG + KAMIENNY KLIK UI
+     ********************************************************************/
+    let ytPlayer = null;
+    let ytReady = false;
+    let videoId = '6QdLsPBa30o';
+
+    function parseYtId(url) {
+      const m = String(url).match(/^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);
+      return (m && m[2].length === 11) ? m[2] : '6QdLsPBa30o';
+    }
+
+    const ytScript = document.createElement('script');
+    ytScript.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(ytScript);
+
+    window.onYouTubeIframeAPIReady = function() {
+      ytPlayer = new YT.Player('yt-player', {
+        height: '1',
+        width: '1',
+        videoId: videoId,
+        playerVars: {
+          autoplay: 0,
+          loop: 1,
+          playlist: videoId,
+          controls: 0,
+          origin: window.location.origin || 'https://www.youtube.com'
+        },
+        events: {
+          onReady: (e) => {
+            ytReady = true;
+            e.target.setVolume(70);
+          },
+          onStateChange: (e) => {
+            updateMusicSocketGlow(e.data === YT.PlayerState.PLAYING);
+          }
+        }
+      });
+    };
+
+    function updateMusicSocketGlow(isPlaying) {
+      const btn = document.getElementById('music-socket-btn');
+      if (isPlaying || droneActive) {
+        btn.classList.add('music-active');
+      } else {
+        btn.classList.remove('music-active');
+      }
+    }
+
+    function toggleYouTubePlayback() {
+      playUiClick();
+      if (!ytReady || !ytPlayer) return;
+      const state = ytPlayer.getPlayerState();
+      if (state === YT.PlayerState.PLAYING) {
+        ytPlayer.pauseVideo();
+      } else {
+        ytPlayer.playVideo();
+      }
+    }
+
+    function changeYouTubeTrack() {
+      playUiClick();
+      const val = document.getElementById('yt-url-field').value.trim();
+      videoId = parseYtId(val);
+      if (ytReady && ytPlayer) {
+        ytPlayer.loadVideoById({ videoId });
+        ytPlayer.playVideo();
+      }
+    }
+
+    function setYouTubeVol(val) {
+      if (ytReady && ytPlayer) ytPlayer.setVolume(Number(val));
+    }
+
+    // WEB AUDIO API
+    let audioCtx = null;
+    let droneNodes = null;
+    let droneActive = false;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AC();
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    // Krótki kamienno-metaliczny dźwięk kliknięcia w interfejsie RPG
+    function playUiClick() {
+      try {
+        initAudio();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(45, now + 0.065);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.075);
+      } catch (e) {}
+    }
+
+    // Potężny gong aktywacji aktu
+    function playRitualGong(mode = 'PDP') {
+      initAudio();
+      const now = audioCtx.currentTime;
+
+      // Uderzenie sub-basowe
+      const sub = audioCtx.createOscillator();
+      const subG = audioCtx.createGain();
+      sub.type = 'sine';
+      sub.frequency.setValueAtTime(92, now);
+      sub.frequency.exponentialRampToValueAtTime(28, now + 2.0);
+      subG.gain.setValueAtTime(0.8, now);
+      subG.gain.exponentialRampToValueAtTime(0.001, now + 2.4);
+      sub.connect(subG);
+      subG.connect(audioCtx.destination);
+      sub.start(now);
+      sub.stop(now + 2.5);
+
+      // Harmoniczne gongu
+      const freqs = mode === 'NATURA' ? [180, 270, 380, 540] : [136.1, 204, 272.2, 408, 612];
+      freqs.forEach((f, i) => {
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = i % 2 === 0 ? 'sine' : 'triangle';
+        osc.frequency.setValueAtTime(f, now);
+        g.gain.setValueAtTime(0.001, now);
+        g.gain.linearRampToValueAtTime(0.26 / (i + 1), now + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.0008, now + 4.2 - i * 0.35);
+        osc.connect(g);
+        g.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 4.3);
+      });
+    }
+
+    function toggleTempleDrone() {
+      initAudio();
+      const btn = document.getElementById('drone-btn');
+      if (droneActive && droneNodes) {
+        droneNodes.gain.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 0.6);
+        setTimeout(() => {
+          droneNodes.o1.stop();
+          droneNodes.o2.stop();
+          droneNodes = null;
+        }, 650);
+        droneActive = false;
+        btn.textContent = 'Mistyczny Dron 432 Hz: WYŁ';
+        updateMusicSocketGlow(ytReady && ytPlayer && ytPlayer.getPlayerState() === 1);
+        return;
+      }
+
+      const now = audioCtx.currentTime;
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.15, now + 1.5);
+      gain.connect(audioCtx.destination);
+
+      const o1 = audioCtx.createOscillator();
+      const o2 = audioCtx.createOscillator();
+      o1.type = 'sine';
+      o2.type = 'triangle';
+      o1.frequency.setValueAtTime(108, now);
+      o2.frequency.setValueAtTime(162, now);
+
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(300, now);
+
+      o1.connect(filter);
+      o2.connect(filter);
+      filter.connect(gain);
+      o1.start();
+      o2.start();
+
+      droneNodes = { o1, o2, gain };
+      droneActive = true;
+      btn.textContent = 'Mistyczny Dron 432 Hz: WŁ';
+      updateMusicSocketGlow(true);
+    }
+
+    /********************************************************************
+     * 4. NAWIGACJA I LOGIKA MOBILNA / DESKTOPOWA
+     ********************************************************************/
+    document.getElementById('unlock-gate-btn').addEventListener('click', () => {
+      initAudio();
+      playRitualGong('PDP');
+      document.getElementById('gate-screen').classList.add('unlocked');
+      if (ytReady && ytPlayer) {
+        ytPlayer.playVideo();
+      }
+    });
+
+    function selectModule(modKey, slotEl) {
+      playUiClick();
+      currentModule = modKey;
+
+      document.querySelectorAll('.dock-slot').forEach(s => s.classList.remove('active'));
+      if (slotEl) slotEl.classList.add('active');
+
+      document.querySelectorAll('.module-view').forEach(m => m.classList.remove('active'));
+      document.getElementById(`mod-${modKey}`).classList.add('active');
+
+      updateMobileCounter();
+      applyMobilePaneVisibility();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function setMobilePane(pane) {
+      playUiClick();
+      currentMobilePane = pane;
+      document.getElementById('pill-forge').classList.toggle('active', pane === 'forge');
+      document.getElementById('pill-tome').classList.toggle('active', pane === 'tome');
+      applyMobilePaneVisibility();
+    }
+
+    function applyMobilePaneVisibility() {
+      const activeMod = document.getElementById(`mod-${currentModule}`);
+      if (!activeMod) return;
+      const forgePane = activeMod.querySelector('.pane-forge');
+      const tomePane = activeMod.querySelector('.pane-tome');
+
+      if (currentMobilePane === 'forge') {
+        forgePane.classList.remove('mobile-hidden');
+        tomePane.classList.add('mobile-hidden');
+      } else {
+        forgePane.classList.add('mobile-hidden');
+        tomePane.classList.remove('mobile-hidden');
+      }
+    }
+
+    function updateMobileCounter() {
+      const counts = {
+        pdp: db.pdpArt.length,
+        natura: db.natura2000.length,
+        kockodonov: db.kockodonov.length,
+        postanowienia: db.postanowienia.length
+      };
+      document.getElementById('mobile-records-counter').textContent = counts[currentModule] || 0;
+    }
+
+    function toggleModal(id, show) {
+      playUiClick();
+      document.getElementById(id).classList.toggle('open', show);
+    }
+
+    function showClimaxScreen(sealCode, title, desc, printCallback) {
+      document.getElementById('climax-seal-code').textContent = sealCode;
+      document.getElementById('climax-title').textContent = title;
+      document.getElementById('climax-desc').textContent = desc;
+      const printBtn = document.getElementById('climax-print-btn');
+      printBtn.onclick = () => {
+        closeClimaxScreen();
+        printCallback();
+      };
+      document.getElementById('ritual-climax-screen').classList.add('active');
+    }
+
+    function closeClimaxScreen() {
+      playUiClick();
+      document.getElementById('ritual-climax-screen').classList.remove('active');
+      setMobilePane('tome');
+    }
+
+    /********************************************************************
+     * 5. POMOCNICZE FORMATOWANIE RZYMSKIE I DATY
+     ********************************************************************/
+    function toRoman(num) {
+      if (num <= 0) return 'I';
+      const lookup = [
+        [1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],
+        [100,'C'],[90,'XC'],[50,'L'],[40,'XL'],
+        [10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']
+      ];
+      let res = '';
+      for (const [v, s] of lookup) {
+        while (num >= v) { res += s; num -= v; }
+      }
+      return res;
+    }
+
+    const MONTHS_PL = [
+      'Stycznia','Lutego','Marca','Kwietnia','Maja','Czerwca',
+      'Lipca','Sierpnia','Września','Października','Listopada','Grudnia'
+    ];
+
+    function ancientDate(iso) {
+      const d = new Date(iso || Date.now());
+      const hm = d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+      return `Dnia ${toRoman(d.getDate())} ${MONTHS_PL[d.getMonth()]} Roku ${toRoman(d.getFullYear())} (${hm})`;
+    }
+
+    function esc(s) {
+      return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function nl2br(s) {
+      return esc(s).replace(/\n/g, '<br>');
+    }
+
+    /********************************************************************
+     * 6. TWORZENIE AKT W 4 MODUŁACH
+     ********************************************************************/
+    // 1. PDP ART
+    function submitPdpArt(e) {
+      e.preventDefault();
+      const rec = {
+        id: 'PDP-' + Date.now(),
+        number: db.pdpArt.length + 1,
+        title: document.getElementById('pdp-title').value.trim(),
+        stance: document.getElementById('pdp-stance').value.trim(),
+        consequences: document.getElementById('pdp-conseq').value.trim(),
+        createdAt: new Date().toISOString()
+      };
+      db.pdpArt.unshift(rec);
+      saveDb();
+      e.target.reset();
+      playRitualGong('PDP');
+      showClimaxScreen(
+        'PDP ART',
+        'AKTYWOWANO PODPIS ARTYSTY',
+        `Akt „${rec.title}” został wieczyste zapieczętowany.`,
+        () => printPdp(rec.id)
+      );
+    }
+
+    // 2. NATURA 2000
+    function submitNatura(e) {
+      e.preventDefault();
+      const rec = {
+        id: 'NAT-' + Date.now(),
+        number: db.natura2000.length + 1,
+        name: document.getElementById('nat-name').value.trim(),
+        habitat: document.getElementById('nat-habitat').value.trim(),
+        category: document.getElementById('nat-class').value,
+        reason: document.getElementById('nat-reason').value.trim(),
+        directive: document.getElementById('nat-dir').value.trim(),
+        createdAt: new Date().toISOString()
+      };
+      db.natura2000.unshift(rec);
+      saveDb();
+      document.getElementById('nat-name').value = '';
+      document.getElementById('nat-habitat').value = '';
+      document.getElementById('nat-reason').value = '';
+      playRitualGong('NATURA');
+      showClimaxScreen(
+        'NATURA 2000',
+        'WPISANO DO AKT NATURY 2000',
+        `Obiekt „${rec.name}” objęto statusem reliktu. Zakaz ingerencji w jestestwo.`,
+        () => printNaturaSingle(rec.id)
+      );
+    }
+
+    // 3. BLOK KOCKODONOV
+    function submitKockodonov(e) {
+      e.preventDefault();
+      const rec = {
+        id: 'KOCKO-' + Date.now(),
+        number: db.kockodonov.length + 1,
+        title: document.getElementById('kocko-title').value.trim(),
+        startTime: document.getElementById('kocko-start').value,
+        endTime: document.getElementById('kocko-end').value,
+        bans: document.getElementById('kocko-bans').value.trim(),
+        exceptions: document.getElementById('kocko-exc').value.trim() || 'Brak wyjątków.',
+        createdAt: new Date().toISOString()
+      };
+      db.kockodonov.unshift(rec);
+      db.activeKockodonovId = rec.id;
+      saveDb();
+      document.getElementById('kocko-title').value = '';
+      refreshKockodonovHud();
+      playRitualGong('PDP');
+      showClimaxScreen(
+        'KOCKODONOV',
+        'AKTYWOWANO BLOK KOCKODONOV',
+        `Reżim focusu (${rec.startTime} – ${rec.endTime}) wszedł w życie.`,
+        () => printKocko(rec.id)
+      );
+    }
+
+    function engageKockodonov(id) {
+      db.activeKockodonovId = id;
+      saveDb();
+      refreshKockodonovHud();
+      playRitualGong('PDP');
+    }
+
+    function stopActiveKockodonov() {
+      playUiClick();
+      db.activeKockodonovId = null;
+      saveDb();
+      refreshKockodonovHud();
+    }
+
+    function refreshKockodonovHud() {
+      const box = document.getElementById('kocko-active-hud');
+      const active = db.kockodonov.find(x => x.id === db.activeKockodonovId);
+      if (!active) {
+        box.classList.remove('active');
+        return;
+      }
+      box.classList.add('active');
+      document.getElementById('hud-kocko-name').textContent = `BLOK KOCKODONOV: ${active.title}`;
+      document.getElementById('hud-kocko-hours').textContent = `Przedział: ${active.startTime} – ${active.endTime}`;
+      document.getElementById('hud-kocko-bans').innerHTML = nl2br(active.bans);
+      document.getElementById('hud-kocko-exc').innerHTML = nl2br(active.exceptions);
+      tickKockoTimer();
+    }
+
+    function tickKockoTimer() {
+      const active = db.kockodonov.find(x => x.id === db.activeKockodonovId);
+      if (!active) return;
+      const now = new Date();
+      const [eh, em] = active.endTime.split(':').map(Number);
+      const target = new Date();
+      target.setHours(eh, em, 0, 0);
+      const diff = target - now;
+      const el = document.getElementById('hud-kocko-timer');
+      if (diff <= 0) {
+        el.textContent = 'DOPEŁNIONO';
+      } else {
+        const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+        const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+        const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+        el.textContent = `${h}:${m}:${s}`;
+      }
+    }
+    setInterval(tickKockoTimer, 1000);
+
+    // 4. POSTANOWIENIA
+    function submitPostanowienie(e) {
+      e.preventDefault();
+      const rec = {
+        id: 'POST-' + Date.now(),
+        number: db.postanowienia.length + 1,
+        title: document.getElementById('post-title').value.trim(),
+        startDate: document.getElementById('post-start').value,
+        endDate: document.getElementById('post-end').value,
+        clauses: document.getElementById('post-clauses').value.trim(),
+        notes: document.getElementById('post-notes').value.trim() || 'Rygor bezwzględny.',
+        createdAt: new Date().toISOString()
+      };
+      db.postanowienia.unshift(rec);
+      saveDb();
+      e.target.reset();
+      initDefaultDates();
+      playRitualGong('PDP');
+      showClimaxScreen(
+        'DEKRET',
+        'WPROWADZONO POSTANOWIENIA',
+        `Akt „${rec.title}” obowiązuje od ${rec.startDate} do ${rec.endDate}.`,
+        () => printPost(rec.id)
+      );
+    }
+
+    function removeEntry(col, id) {
+      playUiClick();
+      db[col] = db[col].filter(x => x.id !== id);
+      if (col === 'kockodonov' && db.activeKockodonovId === id) {
+        db.activeKockodonovId = null;
+      }
+      saveDb();
+      refreshKockodonovHud();
+    }
+
+    /********************************************************************
+     * 7. RENDEROWANIE KART W KSIĘDZE AKT
+     ********************************************************************/
+    function renderAllScrolls() {
+      // 1. PDP ART
+      document.getElementById('badge-count-pdp').textContent = `${db.pdpArt.length} AKT`;
+      const pdpEl = document.getElementById('list-pdp');
+      pdpEl.innerHTML = db.pdpArt.length === 0
+        ? `<div class="empty-sanctum">Brak złożonych Podpisów Artysty.</div>`
+        : db.pdpArt.map(x => `
+          <div class="scroll-card blood-seal">
+            <div class="scroll-card-top">
+              <span>AKT ${toRoman(x.number)} / PDP ART</span>
+              <span>${ancientDate(x.createdAt)}</span>
+            </div>
+            <div class="scroll-card-title">${esc(x.title)}</div>
+            <div class="scroll-detail"><strong>Przyjęta Postawa:</strong>${nl2br(x.stance)}</div>
+            <div class="scroll-detail"><strong>Konsekwencje Złamania:</strong>${nl2br(x.consequences)}</div>
+            <div class="scroll-card-footer">
+              <button class="btn-rpg-gold" onclick="printPdp('${x.id}')">🖨️ Pradawny Druk (PDF)</button>
+              <button class="btn-rpg-ash" onclick="removeEntry('pdpArt','${x.id}')">Usuń</button>
+            </div>
+          </div>
+        `).join('');
+
+      // 2. NATURA 2000
+      const natEl = document.getElementById('list-natura');
+      natEl.innerHTML = db.natura2000.length === 0
+        ? `<div class="empty-sanctum">Sektor Natura 2000 jest pusty.</div>`
+        : db.natura2000.map(x => `
+          <div class="scroll-card">
+            <div class="scroll-card-top">
+              <span>OKAZ ${toRoman(x.number)} / NATURA 2000</span>
+              <span>${esc(x.category)}</span>
+            </div>
+            <div class="scroll-card-title">${esc(x.name)}</div>
+            <div class="scroll-detail"><strong>Siedlisko:</strong>${esc(x.habitat)}</div>
+            <div class="scroll-detail"><strong>Anomalia Poznawcza:</strong>${nl2br(x.reason)}</div>
+            <div class="scroll-detail"><strong>Dyrektywa:</strong>${esc(x.directive)}</div>
+            <div class="scroll-card-footer">
+              <button class="btn-rpg-gold" onclick="printNaturaSingle('${x.id}')">🖨️ Drukuj Potwierdzenie (PDF)</button>
+              <button class="btn-rpg-ash" onclick="removeEntry('natura2000','${x.id}')">Usuń</button>
+            </div>
+          </div>
+        `).join('');
+
+      // 3. KOCKODONOV
+      document.getElementById('badge-count-kocko').textContent = `${db.kockodonov.length} BLOKÓW`;
+      const kockoEl = document.getElementById('list-kockodonov');
+      kockoEl.innerHTML = db.kockodonov.length === 0
+        ? `<div class="empty-sanctum">Brak zapisanych Bloków Kockodonov.</div>`
+        : db.kockodonov.map(x => {
+          const isAct = db.activeKockodonovId === x.id;
+          return `
+            <div class="scroll-card ${isAct ? 'blood-seal' : ''}">
+              <div class="scroll-card-top">
+                <span>BLOK ${toRoman(x.number)} / KOCKODONOV</span>
+                <span>${esc(x.startTime)} – ${esc(x.endTime)}</span>
+              </div>
+              <div class="scroll-card-title">${esc(x.title)} ${isAct ? '🔥 [AKTYWNY]' : ''}</div>
+              <div class="scroll-detail"><strong>Zakazy:</strong>${nl2br(x.bans)}</div>
+              <div class="scroll-detail"><strong>Wyjątki:</strong>${nl2br(x.exceptions)}</div>
+              <div class="scroll-card-footer">
+                <button class="btn-rpg-gold" onclick="printKocko('${x.id}')">🖨️ Drukuj (PDF)</button>
+                ${!isAct ? `<button class="btn-rpg-gold" onclick="engageKockodonov('${x.id}')">🔥 Wzbudź</button>` : ''}
+                <button class="btn-rpg-ash" onclick="removeEntry('kockodonov','${x.id}')">Usuń</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+      // 4. POSTANOWIENIA
+      document.getElementById('badge-count-post').textContent = `${db.postanowienia.length} AKT`;
+      const postEl = document.getElementById('list-postanowienia');
+      postEl.innerHTML = db.postanowienia.length === 0
+        ? `<div class="empty-sanctum">Brak aktywnych Postanowień.</div>`
+        : db.postanowienia.map(x => {
+          const s = new Date(x.startDate);
+          const e = new Date(x.endDate);
+          const now = new Date();
+          const pct = Math.round((Math.min(Math.max(0, now - s), Math.max(1, e - s)) / Math.max(1, e - s)) * 100);
+          return `
+            <div class="scroll-card">
+              <div class="scroll-card-top">
+                <span>DEKRET ${toRoman(x.number)}</span>
+                <span>${esc(x.startDate)} → ${esc(x.endDate)}</span>
+              </div>
+              <div class="scroll-card-title">${esc(x.title)}</div>
+              <div class="xp-bar-frame"><div class="xp-bar-fill" style="width:${pct}%"></div></div>
+              <div class="scroll-detail"><strong>Postanowienia:</strong>${nl2br(x.clauses)}</div>
+              <div class="scroll-detail"><strong>Rygor:</strong>${esc(x.notes)}</div>
+              <div class="scroll-card-footer">
+                <button class="btn-rpg-gold" onclick="printPost('${x.id}')">🖨️ Drukuj Akt (PDF)</button>
+                <button class="btn-rpg-ash" onclick="removeEntry('postanowienia','${x.id}')">Usuń</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+    }
+
+    /********************************************************************
+     * 8. PRADAWNY DRUK NA BIAŁEJ KARTCE A4 (PDF)
+     ********************************************************************/
+    function launchPrint(html) {
+      const area = document.getElementById('print-area');
+      area.innerHTML = html;
+      setTimeout(() => window.print(), 150);
+    }
+
+    function printPdp(id) {
+      const x = db.pdpArt.find(i => i.id === id);
+      if (!x) return;
+      launchPrint(`
+        <div class="print-page-frame">
+          <div>
+            <div class="print-head">
+              <div class="print-main-logo">WYROCZNIA</div>
+              <div class="print-sub-type">AKT WIECZYSTY — PODPIS ARTYSTY (PDP ART)</div>
+            </div>
+            <div class="print-meta-row">
+              <span>SYGNATURA: AKT ${toRoman(x.number)} / PDP-ART</span>
+              <span>${ancientDate(x.createdAt)}</span>
+            </div>
+            <div class="print-sec-heading">I. PRZEDMIOT AKTU</div>
+            <div class="print-box"><strong>${esc(x.title)}</strong></div>
+            <div class="print-sec-heading">II. PRZYJMOWANA POSTAWA</div>
+            <div class="print-box">${nl2br(x.stance)}</div>
+            <div class="print-sec-heading">III. KONSEKWENCJE ZŁAMANIA PODPISU ARTYSTY</div>
+            <div class="print-box">${nl2br(x.consequences)}</div>
+          </div>
+          <div class="print-foot">
+            <div class="print-stamp-circle"><span>PIECZĘĆ</span><strong>PDP ART</strong><span>WYROCZNIA</span></div>
+            <div class="print-sign-area">
+              <div class="print-sign-line"></div>
+              <div class="print-sign-caption">Własnoręczny Podpis Artysty</div>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+
+    function printNaturaSingle(id) {
+      const x = db.natura2000.find(i => i.id === id);
+      if (!x) return;
+      launchPrint(`
+        <div class="print-page-frame">
+          <div>
+            <div class="print-head">
+              <div class="print-main-logo">WYROCZNIA</div>
+              <div class="print-sub-type">POTWIERDZENIE WPISU DO AKT SEKTORA NATURA 2000</div>
+            </div>
+            <div class="print-meta-row">
+              <span>OKAZ NR ${toRoman(x.number)} / NATURA-2000</span>
+              <span>${ancientDate(x.createdAt)}</span>
+            </div>
+            <div class="print-sec-heading">I. IDENTYFIKACJA RELIKTU</div>
+            <div class="print-box">
+              <strong>Obiekt:</strong> ${esc(x.name)}<br>
+              <strong>Siedlisko:</strong> ${esc(x.habitat)}<br>
+              <strong>Klasyfikacja:</strong> ${esc(x.category)}
+            </div>
+            <div class="print-sec-heading">II. STWIERDZONA ANOMALIA POZNAWCZA</div>
+            <div class="print-box">${nl2br(x.reason)}</div>
+            <div class="print-sec-heading">III. DYREKTYWA OCHRONNA</div>
+            <div class="print-box">${nl2br(x.directive)}</div>
+          </div>
+          <div class="print-foot">
+            <div class="print-stamp-circle"><span>SEKTOR</span><strong>NATURA 2000</strong><span>RELIKT</span></div>
+            <div class="print-sign-area">
+              <div class="print-sign-line"></div>
+              <div class="print-sign-caption">Podpis Konserwatora Akt</div>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+
+    function printFullNaturaSector() {
+      if (db.natura2000.length === 0) {
+        alert('Brak wpisów w Sektorze Natura 2000.');
+        return;
+      }
+      const rows = db.natura2000.map(x => `
+        <tr>
+          <td><strong>${toRoman(x.number)}</strong></td>
+          <td><strong>${esc(x.name)}</strong><br><small>${esc(x.category)}</small></td>
+          <td>${esc(x.habitat)}</td>
+          <td>${nl2br(x.reason)}</td>
+          <td>${esc(x.directive)}</td>
+        </tr>
+      `).join('');
+
+      launchPrint(`
+        <div class="print-page-frame">
+          <div>
+            <div class="print-head">
+              <div class="print-main-logo">WYROCZNIA</div>
+              <div class="print-sub-type">AKTUALNE AKTA OSÓB W SEKTORZE NATURA 2000</div>
+            </div>
+            <div class="print-meta-row">
+              <span>LICZBA OBIEKTÓW: ${db.natura2000.length}</span>
+              <span>${ancientDate(new Date())}</span>
+            </div>
+            <table class="print-table">
+              <thead>
+                <tr>
+                  <th>Nr</th>
+                  <th>Obiekt</th>
+                  <th>Siedlisko</th>
+                  <th>Anomalia</th>
+                  <th>Dyrektywa</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+          <div class="print-foot">
+            <div class="print-stamp-circle"><span>REJESTR</span><strong>NATURA 2000</strong><span>WYROCZNIA</span></div>
+            <div class="print-sign-area">
+              <div class="print-sign-line"></div>
+              <div class="print-sign-caption">Pieczęć i Podpis</div>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+
+    function printKocko(id) {
+      const x = db.kockodonov.find(i => i.id === id);
+      if (!x) return;
+      launchPrint(`
+        <div class="print-page-frame">
+          <div>
+            <div class="print-head">
+              <div class="print-main-logo">WYROCZNIA</div>
+              <div class="print-sub-type">DEKRET REŻIMU CZASOWEGO — BLOK KOCKODONOV</div>
+            </div>
+            <div class="print-meta-row">
+              <span>BLOK ${toRoman(x.number)} / KOCKODONOV</span>
+              <span>GODZINY: ${esc(x.startTime)} – ${esc(x.endTime)}</span>
+            </div>
+            <div class="print-sec-heading">I. CEL SKUPIENIA</div>
+            <div class="print-box"><strong>${esc(x.title)}</strong> (${esc(x.startTime)} – ${esc(x.endTime)})</div>
+            <div class="print-sec-heading">II. SZEREG ZAKAZÓW</div>
+            <div class="print-box">${nl2br(x.bans)}</div>
+            <div class="print-sec-heading">III. WYJĄTKI OD REGUŁ</div>
+            <div class="print-box">${nl2br(x.exceptions)}</div>
+          </div>
+          <div class="print-foot">
+            <div class="print-stamp-circle"><span>BLOKADA</span><strong>KOCKODONOV</strong><span>WYROCZNIA</span></div>
+            <div class="print-sign-area">
+              <div class="print-sign-line"></div>
+              <div class="print-sign-caption">Podpis Wykonawcy</div>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+
+    function printPost(id) {
+      const x = db.postanowienia.find(i => i.id === id);
+      if (!x) return;
+      launchPrint(`
+        <div class="print-page-frame">
+          <div>
+            <div class="print-head">
+              <div class="print-main-logo">WYROCZNIA</div>
+              <div class="print-sub-type">AKT POSTANOWIEŃ ODRĘBNYCH</div>
+            </div>
+            <div class="print-meta-row">
+              <span>AKT NR ${toRoman(x.number)} / POSTANOWIENIA</span>
+              <span>OKRES: ${esc(x.startDate)} — ${esc(x.endDate)}</span>
+            </div>
+            <div class="print-sec-heading">I. TYTUŁ I CZAS OBOWIĄZYWANIA</div>
+            <div class="print-box"><strong>${esc(x.title)}</strong><br>Od dnia ${esc(x.startDate)} do dnia ${esc(x.endDate)}</div>
+            <div class="print-sec-heading">II. SZEREG POSTANOWIEŃ</div>
+            <div class="print-box">${nl2br(x.clauses)}</div>
+            <div class="print-sec-heading">III. RYGOR WYKONAWCZY</div>
+            <div class="print-box">${nl2br(x.notes)}</div>
+          </div>
+          <div class="print-foot">
+            <div class="print-stamp-circle"><span>DEKRET</span><strong>TERMINOWY</strong><span>WYROCZNIA</span></div>
+            <div class="print-sign-area">
+              <div class="print-sign-line"></div>
+              <div class="print-sign-caption">Własnoręczny Podpis</div>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+
+    /********************************************************************
+     * 9. KOPIA AKT ("POPROŚ WYROCZNIĘ O KOPIĘ AKT")
+     ********************************************************************/
+    function exportOracleScroll() {
+      playRitualGong('PDP');
+      const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `WYROCZNIA_KOPIA_AKT_${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function importOracleScroll(e) {
+      const f = e.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = (ev) => {
+        try {
+          const parsed = JSON.parse(ev.target.result);
+          db = {
+            pdpArt: parsed.pdpArt || [],
+            natura2000: parsed.natura2000 || [],
+            kockodonov: parsed.kockodonov || [],
+            postanowienia: parsed.postanowienia || [],
+            activeKockodonovId: parsed.activeKockodonovId || null
+          };
+          saveDb();
+          refreshKockodonovHud();
+          toggleModal('archive-modal', false);
+          playRitualGong('PDP');
+        } catch (err) {
+          alert('Uszkodzony plik zwoju.');
+        }
+      };
+      r.readAsText(f);
+    }
+
+    function initDefaultDates() {
+      const t = new Date().toISOString().slice(0, 10);
+      const m = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+      document.getElementById('post-start').value = t;
+      document.getElementById('post-end').value = m;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadDb();
+      initDefaultDates();
+      renderAllScrolls();
+      refreshKockodonovHud();
+      updateMobileCounter();
+      applyMobilePaneVisibility();
+    });
+  </script>
+</body>
+</html>
